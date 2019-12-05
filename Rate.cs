@@ -18,6 +18,11 @@ namespace ALS_RECOMMENDATION_ALGORITHM
 
 
         }
+
+        public double Value { get => value; set => this.value = value; }
+        public int Product { get => product; set => product = value; }
+        public int User { get => user; set => user = value; }
+
         public override string ToString()
         {
             return "Rate: " + this.value + " Product: " + this.product+ " User: "+this.user;

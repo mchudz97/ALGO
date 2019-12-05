@@ -11,12 +11,12 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         private Dictionary<String, int> productDict;
         private List<Rate> rateList;
 
-        //private double[][]
+        
 
         private double[] generateVu(double[][] products, int indexUser )
         {
-            int matrixWidth = this.getProductsAmount(indexUser);
-            double[] vu= new double[indexUser];
+         
+            double[] vu= new double[products[0].Length];
             foreach(Rate r in rateList)
             {
                 if (r.User == indexUser)
@@ -30,18 +30,22 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             }
             return vu;
         }
-        private int getProductsAmount(int indexUser)
+        private double[] generateWp(double[][] users, int indexProduct)
         {
-            int amount=0;
-            for(int i=0; i < rateList.Count; i++)
+            
+            double[] wp = new double[users[0].Length];
+            foreach(Rate r in rateList)
             {
-                if (rateList[i].User == i)
+                if (r.Product == indexProduct)
                 {
-                    amount++;
+                    for(int i = 0; i < users[r.User].Length; i++)
+                    {
+                        wp[i] = wp[i] + users[r.User][i] * r.Value;
+                    }
                 }
             }
-            return amount;
+            return wp;
         }
-
+        
     }
 }

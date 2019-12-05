@@ -16,7 +16,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         private Dictionary<String, int> productDict;
         private int productCounter=0;
         private int userCounter = 0;
-        private ArrayList rateList;
+        private List<Rate> rateList;
 
         public Parser(String path, int limit)
         {
@@ -25,13 +25,13 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             this.recordLimiter = limit+1;
             this.userDict = new Dictionary<String, int>();
             this.productDict = new Dictionary<String, int>();
-            this.rateList = new ArrayList(0);
+            this.rateList = new List<Rate>(0);
             this.parse();
         }
 
         public Dictionary<string, int> UserDict { get => userDict; set => userDict = value; }
         public Dictionary<string, int> ProductDict { get => productDict; set => productDict = value; }
-        public ArrayList RateList { get => rateList; set => rateList = value; }
+        public List<Rate> RateList { get => rateList; set => rateList = value; }
 
         public void parse()
         {
