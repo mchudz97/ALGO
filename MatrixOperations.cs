@@ -69,6 +69,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
 
             //reduces productMatrix into subMatrix piu that contains the products that the user rated 
             double[,] piu = new double[productsMatrix.GetLength(0),productIndexList.Count];
+
             for(int i = 0; i < productIndexList.Count; i++) {
                 for(int j = 0; j < productsMatrix.GetLength(0); j++) {
                     piu[j,i] = productsMatrix[j,productIndexList[i]];
@@ -76,17 +77,22 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             }
             //transposes piu matrix into new matrix variable
             double[,] transposedPiu = transposeMatrix(piu);
-            Console.WriteLine("MATRIX Piu");
-            printMatrix(piu);
-            Console.WriteLine("MATRIX Piu^T");
-            printMatrix(transposedPiu);
-            
 
-            return new double[2,2];
+            //multiplies two pius
+            double[,] multipliedPiuMatrixes = Times(piu,transposedPiu);
+
+            //generates diagonal 1 matrix and multiplies 1's by lambda
+            double[,] lambdaMatrix = generateLambdaMatrix(0.1, multipliedPiuMatrixes.GetLength(0), multipliedPiuMatrixes.GetLength(1));
+
+            //sum of lambda matrix and multiPius = au
+            double[,] au = Plus(multipliedPiuMatrixes,lambdaMatrix);
+
+            //double[,] lambdaMatrix = generateLambdaMatrix
+            return au;
         }
 
         //transposes matrix, switches column indexs to row indexes (column 1 now becomes row 1, and row 1 becomes column 1)
-        public double[,] transposeMatrix(double[,] matrix) {
+        private double[,] transposeMatrix(double[,] matrix) {
             double[,] transposedMatrix = new double[matrix.GetLength(1),matrix.GetLength(0)];
             for(int i = 0; i < matrix.GetLength(1); i++) {
                 for(int j = 0; j < matrix.GetLength(0); j++) {
@@ -94,6 +100,50 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                 }
             }
             return transposedMatrix;
+        }
+
+        private double[,] generateLambdaMatrix(double lambda, int n, int m) {
+            double[,] lambdaMatrix = new double[n,m];
+            for(int i = 0; i < n; i++) {
+                for(int j = 0; j < m; j++) {
+                    if(i == j)
+                        lambdaMatrix[i,j] = lambda;
+                    else
+                        lambdaMatrix[i,j] = 0.0;
+                }
+            }
+            return lambdaMatrix;
+        }
+
+        private double[,] Plus(double[,] a , double[,] b) {
+            if(a.GetLength(0) != b.GetLength(0) || a.GetLength(1) != b.GetLength(1))
+                throw new System.ArgumentException("Matrixes must be the same size when adding");
+            
+            for(int i = 0; i < a.GetLength(0); i++) {
+                for(int j = 0; j < a.GetLength(1); j++) {
+                    a[i,j] += b[i,j];
+                }
+            }
+            return a;
+        }
+
+        private double[,] Times(double[,] a, double[,] b) {
+            if(a.GetLength(1) != b.GetLength(0))
+                            throw new System.ArgumentException("Matrixes must be able to multiply");
+            
+            double[,] multipliedMatrix = new double[a.GetLength(0), b.GetLength(1)];
+            for(int i = 0; i < a.GetLength(0); i++) {
+                for(int j = 0; j < b.GetLength(1); j++) {
+                    double sum = 0;
+                    for(int k = 0; k < a.GetLength(1); k++) {
+                        sum+= a[i,k]*b[k,j];
+                    }
+                    multipliedMatrix[i,j] = sum;
+                }
+
+            }
+            return multipliedMatrix;
+
         }
 
 
