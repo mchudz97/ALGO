@@ -17,8 +17,9 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         private int productCounter=0;
         private int userCounter = 0;
         private List<Rate> rateList;
+        private String category;
 
-        public Parser(String path, int limit)
+        public Parser(String path,String category, int limit)
         {
             this.path = path;
             sr = new StreamReader(path);
@@ -26,6 +27,8 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             this.userDict = new Dictionary<String, int>();
             this.productDict = new Dictionary<String, int>();
             this.rateList = new List<Rate>(0);
+            this.category = category;
+
             this.parse();
         }
 
@@ -49,39 +52,55 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                 if (Regex.IsMatch(ln,  "Id:[ ]*[1-9].*"))
                 {
 
-                    productCounter++;
+                    
                     String productASIN = "";
-
+                    bool correctCategory = false;        
                     while ((ln = sr.ReadLine()) != "")
                     {
                         
                         String customerASIN = "";
+                        if(Regex.IsMatch(ln, "group: " + this.category))
+                        {
+                            correctCategory = true;
+                        }
                         if (Regex.IsMatch(ln, "^ASIN.*"))
                         {
-                            ln=ln.Replace(" ", "");
+                            productCounter++;
+                            ln =ln.Replace(" ", "");
                             String[] parts = ln.Split(":");
                             productASIN = parts[1];
-                            productDict.Add(productASIN, productCounter);
+                            
                         }
-                        if(Regex.IsMatch(ln, ".*cutomer"))
+                        if (correctCategory == true)
                         {
-                            int uIndex = 0;
-                            String tmp = Regex.Match(ln, "cutomer:.*rating:").Value;
-                            customerASIN= tmp[8..^7].Trim();
+                            if (!productDict.ContainsKey(productASIN))
+                            {
+                                productDict.Add(productASIN, productCounter);
+                            }
+                            
+                            if(Regex.IsMatch(ln, ".*cutomer"))
+                            {
+                                int uIndex = 0;
+                                String tmp = Regex.Match(ln, "cutomer:.*rating:").Value;
+                                customerASIN= tmp[8..^7].Trim();
 
-                            if (!userDict.ContainsKey(customerASIN))
-                            {
-                                userCounter++;
-                                userDict.Add(customerASIN, userCounter);
-                                uIndex = userCounter;
+                                if (!userDict.ContainsKey(customerASIN))
+                                {
+                                    userCounter++;
+                                    userDict.Add(customerASIN, userCounter);
+                                    uIndex = userCounter;
+                                }
+                                else
+                                {
+                                    uIndex=userDict[customerASIN];
+                                }
+                                tmp = Regex.Match(ln, "rating:.*votes:").Value;
+                                double rate = Double.Parse(tmp[7..^7].Trim());
+                                rateList.Add(new Rate(rate, productCounter, uIndex));
                             }
-                            else
-                            {
-                                uIndex=userDict[customerASIN];
-                            }
-                            tmp = Regex.Match(ln, "rating:.*votes:").Value;
-                            double rate = Double.Parse(tmp[7..^7].Trim());
-                            rateList.Add(new Rate(rate, productCounter, uIndex));
+
+
+
                         }
                         
                     }
