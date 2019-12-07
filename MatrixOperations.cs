@@ -49,7 +49,49 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             return wp;
         }
 
-        public double[,] generateAu(int user, double[,] productsMatrix) {
+        public double[,] generateBp(int product, double[,] usersMatrix) {
+            //list that contains product index in productsMatrix
+            List<int> userIndexList = new List<int>();
+
+            //for every rate check if user id(int) == rate user id(int)
+            // if YES add productIndex to list ONLY if NOT added already
+            for(int i = 0 ; i < rateList.Count; i++) {
+                Rate rate  = rateList[i];
+                if(rate.Product == product) {
+                    int userIndex = rate.User;
+                    if(!userIndexList.Contains(userIndex))
+                        userIndexList.Add(userIndex);
+                }
+            }
+            
+            //sort by index ascending
+            userIndexList.Sort();
+
+            //reduces productMatrix into subMatrix piu that contains the products that the user rated 
+            double[,] bip = new double[userIndexList.Count, usersMatrix.GetLength(1)];
+
+            for(int i = 0; i < userIndexList.Count; i++) {
+                for(int j = 0; j < usersMatrix.GetLength(0); j++) {
+                    bip[i,j] = usersMatrix[userIndexList[i], j];
+                }
+            }
+            //transposes piu matrix into new matrix variable
+            double[,] transposedBip = transposeMatrix(bip);
+
+            //multiplies two bips
+            double[,] multipliedBipMatrixes = Times(bip,transposedBip);
+
+            //generates diagonal 1 matrix and multiplies 1's by lambda
+            double[,] lambdaMatrix = generateLambdaMatrix(0.1, multipliedBipMatrixes.GetLength(0), multipliedBipMatrixes.GetLength(1));
+
+            //sum of lambda matrix and multiPius = au
+            double[,] Bp = Plus(multipliedBipMatrixes,lambdaMatrix);
+
+            //double[,] lambdaMatrix = generateLambdaMatrix
+            return Bp;
+        }
+
+                public double[,] generateAu(int user, double[,] productsMatrix) {
             //list that contains product index in productsMatrix
             List<int> productIndexList = new List<int>();
 
@@ -102,6 +144,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             return transposedMatrix;
         }
 
+        //generates diagonal 1's across zeroed matrix and multiplys 1s by lamda
         private double[,] generateLambdaMatrix(double lambda, int n, int m) {
             double[,] lambdaMatrix = new double[n,m];
             for(int i = 0; i < n; i++) {
@@ -115,6 +158,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             return lambdaMatrix;
         }
 
+        //matrix addition method
         private double[,] Plus(double[,] a , double[,] b) {
             if(a.GetLength(0) != b.GetLength(0) || a.GetLength(1) != b.GetLength(1))
                 throw new System.ArgumentException("Matrixes must be the same size when adding");
@@ -126,7 +170,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             }
             return a;
         }
-
+        //matrix multiplication method
         private double[,] Times(double[,] a, double[,] b) {
             if(a.GetLength(1) != b.GetLength(0))
                             throw new System.ArgumentException("Matrixes must be able to multiply");
