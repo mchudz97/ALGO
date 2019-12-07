@@ -7,7 +7,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
     {
         static void Main(string[] args)
         {
-            Parser p = new Parser("amazon-meta.txt", 30);
+            Parser p = new Parser("amazon-meta.txt","Book", 30);
             foreach (KeyValuePair<String, int> kvp in p.ProductDict)
             {
                 //textBox3.Text += ("Key = {0}, Value = {1}", kvp.Key, kvp.Value);

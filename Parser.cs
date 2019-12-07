@@ -44,7 +44,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             {
                
                 //ln=ln.Replace(" ", "");
-                if (Regex.IsMatch(ln, "Id:[ ]*" + this.recordLimiter.ToString()))
+                if (productDict.Count==recordLimiter)
                 {
                     break;
                 }
