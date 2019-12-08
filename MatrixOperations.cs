@@ -71,10 +71,11 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             double[,] bip = new double[userIndexList.Count, usersMatrix.GetLength(1)];
 
             for(int i = 0; i < userIndexList.Count; i++) {
-                for(int j = 0; j < usersMatrix.GetLength(0); j++) {
+                for(int j = 0; j < usersMatrix.GetLength(1); j++) {
                     bip[i,j] = usersMatrix[userIndexList[i], j];
                 }
             }
+            printMatrix(bip);
             //transposes piu matrix into new matrix variable
             double[,] transposedBip = transposeMatrix(bip);
 
@@ -88,22 +89,23 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             double[,] Bp = Plus(multipliedBipMatrixes,lambdaMatrix);
 
             //double[,] lambdaMatrix = generateLambdaMatrix
+            printMatrix(Bp);
             return Bp;
         }
 
-                public double[,] generateAu(int user, double[,] productsMatrix) {
-            //list that contains product index in productsMatrix
+        public double[,] generateAu(int user, double[,] productsMatrix) {
+        //list that contains product index in productsMatrix
             List<int> productIndexList = new List<int>();
 
             //for every rate check if user id(int) == rate user id(int)
             // if YES add productIndex to list ONLY if NOT added already
             for(int i = 0 ; i < rateList.Count; i++) {
                 Rate rate  = rateList[i];
-                if(rate.User == user) {
-                    int productIndex = rate.Product;
-                    if(!productIndexList.Contains(productIndex))
-                        productIndexList.Add(productIndex);
-                }
+                    if(rate.User == user) {
+                        int productIndex = rate.Product;
+                        if(!productIndexList.Contains(productIndex))
+                            productIndexList.Add(productIndex);
+                    }
             }
             
             //sort by index ascending
@@ -117,6 +119,8 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                     piu[j,i] = productsMatrix[j,productIndexList[i]];
                 }
             }
+            
+
             //transposes piu matrix into new matrix variable
             double[,] transposedPiu = transposeMatrix(piu);
 
@@ -130,7 +134,9 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             double[,] au = Plus(multipliedPiuMatrixes,lambdaMatrix);
 
             //double[,] lambdaMatrix = generateLambdaMatrix
+           
             return au;
+
         }
 
         //transposes matrix, switches column indexs to row indexes (column 1 now becomes row 1, and row 1 becomes column 1)
