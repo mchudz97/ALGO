@@ -4,12 +4,17 @@ using System.Text;
 
 namespace ALS_RECOMMENDATION_ALGORITHM
 {
-    static class Randomizer
+     class Randomizer
     {
-        //returns new matrix as row amount n and columns amount m with randomized values between 0 , 1)        
-        public static double[,] Randomize(int n, int m)
+        Random random;
+        public Randomizer()
         {
-            Random random = new Random();
+            this.random = new Random();
+        }
+        //returns new matrix as row amount n and columns amount m with randomized values between 0 , 1)        
+        public  double[,] Randomize(int n, int m)
+        {
+            
             double[,] matrix = new double[n, m];
             for (int i = 0; i < n; i++)
             {

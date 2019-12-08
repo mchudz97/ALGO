@@ -10,50 +10,82 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         private Dictionary<String, int> userDict;
         private Dictionary<String, int> productDict;
         private List<Rate> rateList;
-
+        private int factorsAmount;
+        Randomizer randomizer;
         
 
-        public MatrixOperations(Parser p)
+        public MatrixOperations(Parser p, int factorsAmount)
         {
             p.parse();
             this.userDict = p.UserDict;
             this.productDict = p.ProductDict;
             this.rateList = p.RateList;
+            this.factorsAmount = factorsAmount;
+            this.randomizer = new Randomizer();
         }
-
-        private double[] generateXu(double [][] products, int indexUser)
+        public void ALS()
         {
-            return this.PG(this.generateAu(indexUser,products),this.generateVu(products, indexUser))
+            double[,] productMatrix = randomizer.Randomize(productDict.Count,factorsAmount);
+            double[,] userMatrix = randomizer.Randomize(userDict.Count, this.factorsAmount);
+            while (1==1)
+            {
+
+                for(int i=0; i < userDict.Count; i++)
+                {
+                    double[] temp = this.generateXu(productMatrix, i);
+                    for(int j = 0; j < factorsAmount; j++)
+                    {
+                        userMatrix[i, j] = temp[j];
+                    }
+                }
+                for (int i = 0; i < productDict.Count; i++)
+                {
+                    double[] temp = this.generateXp(userMatrix, i);
+                    for (int j = 0; j < factorsAmount; j++)
+                    {
+                        productMatrix[i, j] = temp[j];
+                    }
+                }
+                Console.WriteLine(this.targetFunc(productMatrix, userMatrix));
+            }
+        }
+        private double[] generateXu(double [,] products, int indexUser)
+        {
+            return this.PG(this.generateAu(indexUser, products), this.generateVu(products, indexUser));
+        }
+        private double[] generateXp(double [,] users, int indexProduct)
+        {
+            return this.PG(this.generateBp(indexProduct, users), this.generateWp(users, indexProduct));
         }
 
-        private double[] generateVu(double[][] products, int indexUser )
+        private double[] generateVu(double[,] products, int indexUser )
         {
          
-            double[] vu= new double[products[0].Length];
+            double[] vu= new double[products.GetLength(1)];
             foreach(Rate r in rateList)
             {
                 if (r.User == indexUser)
                 {
-                    for (int i = 0; i < products[r.Product].Length; i++)
+                    for (int i = 0; i < products.GetLength(1); i++)
                     {
-                        vu[i] = vu[i] + products[r.Product][i] * r.Value;
+                        vu[i] = vu[i] + products[r.Product,i] * r.Value;
 
                     }
                 }
             }
             return vu;
         }
-        private double[] generateWp(double[][] users, int indexProduct)
+        private double[] generateWp(double[,] users, int indexProduct)
         {
             
-            double[] wp = new double[users[0].Length];
+            double[] wp = new double[users.GetLength(1)];
             foreach(Rate r in rateList)
             {
                 if (r.Product == indexProduct)
                 {
-                    for(int i = 0; i < users[r.User].Length; i++)
+                    for(int i = 0; i < users.GetLength(1); i++)
                     {
-                        wp[i] = wp[i] + users[r.User][i] * r.Value;
+                        wp[i] = wp[i] + users[r.User,i] * r.Value;
                     }
                 }
             }
@@ -250,29 +282,29 @@ namespace ALS_RECOMMENDATION_ALGORITHM
 
 
 
-        private double[] PG(double[][] tab1, double[] tab2)
+        private double[] PG(double[,] tab1, double[] tab2)
         {
             GaussPG(tab1, tab2);
 
             return this.Reverse(this.Eliminate(tab1, tab2));
         }
 
-        private double[] Eliminate(double[][] tab1, double[] tab2)
+        private double[] Eliminate(double[,] tab1, double[] tab2)
         {
             double[] x = new double[tab2.Length];
             for (int i = tab2.Length - 1; i >= 0; i--)
             {
                 for (int j = tab2.Length - 1; j > i; j--)
                 {
-                    tab2[i] -= (dynamic)tab1[j][i] * x[tab2.Length - 1 - j];
+                    tab2[i] -= (dynamic)tab1[j,i] * x[tab2.Length - 1 - j];
                 }
-                x[tab2.Length - 1 - i] = (dynamic)tab2[i] / tab1[i][i];
+                x[tab2.Length - 1 - i] = (dynamic)tab2[i] / tab1[i,i];
             }
             return x;
         }
-        private void GaussPG(double[][] tabA, double[] tabB)
+        private void GaussPG(double[,] tabA, double[] tabB)
         {
-            for (int i = 0; i < tabA.Length; i++)
+            for (int i = 0; i < tabB.Length; i++)
             {
                 Point p = this.GetBiggestPG(tabA, i);
                 RowSwap(tabA, tabB, i, p.Y);
@@ -280,14 +312,14 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             }
         }
 
-        private void RowSwap(double[][] tab1, double[] tab2, int i, int j)
+        private void RowSwap(double[,] tab1, double[] tab2, int i, int j)
         {
             if (i == j) return;
-            for (int k = i; k < tab1.Length; k++)
+            for (int k = i; k < tab1.GetLength(1); k++)
             {
-                double temp = tab1[k][i];
-                tab1[k][i] = tab1[k][j];
-                tab1[k][j] = temp;
+                double temp = tab1[k,i];
+                tab1[k,i] = tab1[k,j];
+                tab1[k,j] = temp;
             }
             double temp2 = tab2[i];
             tab2[i] = tab2[j];
@@ -295,16 +327,16 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         }
 
 
-        private void ResetColumn(int i, double[][] t1, double[] t2)
+        private void ResetColumn(int i, double[,] t1, double[] t2)
         {
 
-            double resetVal = t1[i][i];
+            double resetVal = t1[i,i];
             for (int j = i + 1; j < t2.Length; j++) //j jest nastepna wartoscia w kolumnnie pod przekatna
             {
-                double check = t1[i][j] / resetVal; // wyznaczamy iloczyn zerujacy
+                double check = t1[i,j] / resetVal; // wyznaczamy iloczyn zerujacy
                 for (int k = i; k < t2.Length; k++)// jedziemy po wierszu
                 {
-                    t1[k][j] = t1[k][j] - t1[k][i] * check;
+                    t1[k,j] = t1[k,j] - t1[k,i] * check;
 
                 }
 
@@ -314,15 +346,15 @@ namespace ALS_RECOMMENDATION_ALGORITHM
 
         }
 
-        private Point GetBiggestPG(double[][] tab, int p)
+        private Point GetBiggestPG(double[,] tab, int p)
         {
             Point point = new Point(p, p);
-            double val = tab[p][p];
-            for (int i = p; i < tab.Length; i++)
+            double val = tab[p,p];
+            for (int i = p; i < tab.GetLength(1); i++)
             {
-                if (Math.Abs(tab[p][i]) > Math.Abs(val))
+                if (Math.Abs(tab[p,i]) > Math.Abs(val))
                 {
-                    val = tab[p][i];
+                    val = tab[p,i];
                     point.Y = i;
                 }
             }
@@ -337,6 +369,54 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                 temp[t.Length - 1 - i] = t[i];
             }
             return temp;
+        }
+        private double targetFunc(double[,] products, double[,] users)
+        {
+            return this.rateDiff(products,users)+0.1 * this.matrixNorm(products) * this.matrixNorm(users);
+        }
+        private double rateDiff(double[,] prod, double[,] user)
+        {
+            double sum = 0;
+            for (int i = 0; i < prod.GetLength(0); i++)
+            {
+                for (int j = 0; j < user.GetLength(0); j++)
+                {
+                    sum+=(this.getRealRate(i, j) - getCountedRate(i, j, prod, user))* (this.getRealRate(i, j) - getCountedRate(i, j, prod, user));
+                }
+            }
+            return sum;
+        }
+        private double matrixNorm(double[,] tab)
+        {
+            double norm=0;
+            for (int j = 0; j < tab.GetLength(0); j++)
+            {
+                for (int i = 0; i < tab.GetLength(1); i++)
+                {
+                    norm += tab[j, i] * tab[j, i];
+                }
+            }
+            return norm;
+        }
+        private double getCountedRate(int prodID, int userID, double[,] prodMat, double[,] userMat)
+        {
+            double rate=0;
+            for(int i=0; i < this.factorsAmount; i++)
+            {
+                rate += prodMat[prodID, i] + userMat[userID, i];
+            }
+            return rate;
+        }
+        private double getRealRate(int prodID, int userID)
+        {
+            foreach(Rate r in rateList)
+            {
+                if(r.User==userID && r.Product == prodID)
+                {
+                    return r.Value;
+                }
+            }
+            return 0;
         }
     }
 }
