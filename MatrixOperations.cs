@@ -68,14 +68,14 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             userIndexList.Sort();
 
             //reduces productMatrix into subMatrix piu that contains the products that the user rated 
-            double[,] bip = new double[userIndexList.Count, usersMatrix.GetLength(1)];
+            double[,] bip = new double[usersMatrix.GetLength(0), userIndexList.Count];
 
             for(int i = 0; i < userIndexList.Count; i++) {
-                for(int j = 0; j < usersMatrix.GetLength(1); j++) {
-                    bip[i,j] = usersMatrix[userIndexList[i], j];
+                for(int j = 0; j < usersMatrix.GetLength(0); j++) {
+                    bip[j,i] = usersMatrix[j,userIndexList[i]];
                 }
             }
-            printMatrix(bip);
+            
             //transposes piu matrix into new matrix variable
             double[,] transposedBip = transposeMatrix(bip);
 
@@ -89,7 +89,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             double[,] Bp = Plus(multipliedBipMatrixes,lambdaMatrix);
 
             //double[,] lambdaMatrix = generateLambdaMatrix
-            printMatrix(Bp);
+            
             return Bp;
         }
 
@@ -112,15 +112,15 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             productIndexList.Sort();
 
             //reduces productMatrix into subMatrix piu that contains the products that the user rated 
-            double[,] piu = new double[productIndexList.Count, productsMatrix.GetLength(1)];
+            double[,] piu = new double[productsMatrix.GetLength(0),productIndexList.Count];
 
             for(int i = 0; i < productIndexList.Count; i++) {
-                for(int j = 0; j < productsMatrix.GetLength(1); j++) {
-                    piu[i,j] = productsMatrix[productIndexList[i], j];
+                for(int j = 0; j < productsMatrix.GetLength(0); j++) {
+                    piu[j,i] = productsMatrix[j, productIndexList[i]];
                 }
             }
             
-
+            
             //transposes piu matrix into new matrix variable
             double[,] transposedPiu = transposeMatrix(piu);
 
