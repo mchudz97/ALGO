@@ -112,11 +112,11 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             productIndexList.Sort();
 
             //reduces productMatrix into subMatrix piu that contains the products that the user rated 
-            double[,] piu = new double[productsMatrix.GetLength(0),productIndexList.Count];
+            double[,] piu = new double[productIndexList.Count, productsMatrix.GetLength(1)];
 
             for(int i = 0; i < productIndexList.Count; i++) {
-                for(int j = 0; j < productsMatrix.GetLength(0); j++) {
-                    piu[j,i] = productsMatrix[j,productIndexList[i]];
+                for(int j = 0; j < productsMatrix.GetLength(1); j++) {
+                    piu[i,j] = productsMatrix[productIndexList[i], j];
                 }
             }
             
