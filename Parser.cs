@@ -23,7 +23,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         {
             this.path = path;
             sr = new StreamReader(path);
-            this.recordLimiter = limit+1;
+            this.recordLimiter = limit;
             this.userDict = new Dictionary<String, int>();
             this.productDict = new Dictionary<String, int>();
             this.rateList = new List<Rate>(0);
@@ -52,7 +52,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                 if (Regex.IsMatch(ln,  "Id:[ ]*[1-9].*"))
                 {
 
-                    
+                    int productCounterTMP = productCounter;
                     String productASIN = "";
                     bool correctCategory = false;        
                     while ((ln = sr.ReadLine()) != "")
@@ -65,7 +65,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                         }
                         if (Regex.IsMatch(ln, "^ASIN.*"))
                         {
-                            productCounter++;
+                            
                             ln =ln.Replace(" ", "");
                             String[] parts = ln.Split(":");
                             productASIN = parts[1];
@@ -76,6 +76,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                             if (!productDict.ContainsKey(productASIN))
                             {
                                 productDict.Add(productASIN, productCounter);
+                                productCounter++;
                             }
                             
                             if(Regex.IsMatch(ln, ".*cutomer"))
@@ -86,9 +87,10 @@ namespace ALS_RECOMMENDATION_ALGORITHM
 
                                 if (!userDict.ContainsKey(customerASIN))
                                 {
-                                    userCounter++;
+                                    
                                     userDict.Add(customerASIN, userCounter);
                                     uIndex = userCounter;
+                                    userCounter++;
                                 }
                                 else
                                 {
@@ -96,7 +98,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                                 }
                                 tmp = Regex.Match(ln, "rating:.*votes:").Value;
                                 double rate = Double.Parse(tmp[7..^7].Trim());
-                                rateList.Add(new Rate(rate, productCounter, uIndex));
+                                rateList.Add(new Rate(rate, productCounterTMP, uIndex));
                             }
 
 
