@@ -10,6 +10,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         private Dictionary<String, int> userDict;
         private Dictionary<String, int> productDict;
         private List<Rate> rateList;
+        private HashSet<Rate> rateSet;
         private int factorsAmount;
         Randomizer randomizer;
         
@@ -20,14 +21,16 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             this.userDict = p.UserDict;
             this.productDict = p.ProductDict;
             this.rateList = p.RateList;
+            this.rateSet = p.RateSet;
             this.factorsAmount = factorsAmount;
             this.randomizer = new Randomizer();
         }
         public void ALS()
         {
-            double[,] productMatrix = randomizer.Randomize(productDict.Count,factorsAmount);
+            double[,] productMatrix = randomizer.Randomize(productDict.Count,this.factorsAmount);
             double[,] userMatrix = randomizer.Randomize(userDict.Count, this.factorsAmount);
-            while (1==1)
+            int n = 0;
+            while (n!=20)
             {
 
                 for(int i=0; i < userDict.Count; i++)
@@ -47,7 +50,9 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                     }
                 }
                 Console.WriteLine(this.targetFunc(productMatrix, userMatrix));
+                n++;
             }
+            printRmatrixes(productMatrix, userMatrix);
         }
         private double[] generateXu(double [,] products, int indexUser)
         {
@@ -62,7 +67,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         {
          
             double[] vu= new double[products.GetLength(1)];
-            foreach(Rate r in rateList)
+            foreach(Rate r in rateSet)
             {
                 if (r.User == indexUser)
                 {
@@ -71,6 +76,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                         vu[i] = vu[i] + products[r.Product,i] * r.Value;
 
                     }
+                    
                 }
             }
             return vu;
@@ -79,7 +85,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         {
             
             double[] wp = new double[users.GetLength(1)];
-            foreach(Rate r in rateList)
+            foreach(Rate r in rateSet)
             {
                 if (r.Product == indexProduct)
                 {
@@ -87,6 +93,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                     {
                         wp[i] = wp[i] + users[r.User,i] * r.Value;
                     }
+                    
                 }
             }
             return wp;
@@ -96,19 +103,28 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         //DARIUSZ
 
 
-        private double[,] generateBp(int product, double[,] usersMatrix)
+        public double[,] generateBp(int product, double[,] usersMatrix)
         {
             //list that contains product index in productsMatrix
             List<int> userIndexList = new List<int>();
 
             //for every rate check if user id(int) == rate user id(int)
             // if YES add productIndex to list ONLY if NOT added already
-            for (int i = 0; i < rateList.Count; i++)
+           /* for (int i = 0; i < rateList.Count; i++)
             {
                 Rate rate = rateList[i];
                 if (rate.Product == product)
                 {
                     int userIndex = rate.User;
+                    if (!userIndexList.Contains(userIndex))
+                        userIndexList.Add(userIndex);
+                }
+            }*/
+            foreach(Rate r in rateSet)
+            {
+                if (r.Product == product)
+                {
+                    int userIndex = r.User;
                     if (!userIndexList.Contains(userIndex))
                         userIndexList.Add(userIndex);
                 }
@@ -118,44 +134,44 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             userIndexList.Sort();
 
             //reduces productMatrix into subMatrix piu that contains the products that the user rated 
-            double[,] bip = new double[userIndexList.Count, usersMatrix.GetLength(1)];
+            double[,] bip = new double[userIndexList.Count, this.factorsAmount];
 
             for (int i = 0; i < userIndexList.Count; i++)
             {
-                for (int j = 0; j < usersMatrix.GetLength(0); j++)
+                for (int j = 0; j < this.factorsAmount; j++)
                 {
                     bip[i, j] = usersMatrix[userIndexList[i], j];
                 }
             }
-            //transposes piu matrix into new matrix variable
-            double[,] transposedBip = transposeMatrix(bip);
 
-            //multiplies two bips
-            double[,] multipliedBipMatrixes = Times(bip, transposedBip);
-
-            //generates diagonal 1 matrix and multiplies 1's by lambda
-            double[,] lambdaMatrix = generateLambdaMatrix(0.1, multipliedBipMatrixes.GetLength(0), multipliedBipMatrixes.GetLength(1));
-
-            //sum of lambda matrix and multiPius = au
-            double[,] Bp = Plus(multipliedBipMatrixes, lambdaMatrix);
-
-            //double[,] lambdaMatrix = generateLambdaMatrix
-            return Bp;
+            
+            double[,] multiplied = multiplyMat(bip);
+            double[,] bp = addLambda(0.1, multiplied);
+            return bp;
         }
 
-        private double[,] generateAu(int user, double[,] productsMatrix)
+        public double[,] generateAu(int user, double[,] productsMatrix)
         {
             //list that contains product index in productsMatrix
             List<int> productIndexList = new List<int>();
 
             //for every rate check if user id(int) == rate user id(int)
             // if YES add productIndex to list ONLY if NOT added already
-            for (int i = 0; i < rateList.Count; i++)
+            /*for (int i = 0; i < rateList.Count; i++)
             {
                 Rate rate = rateList[i];
                 if (rate.User == user)
                 {
                     int productIndex = rate.Product;
+                    if (!productIndexList.Contains(productIndex))
+                        productIndexList.Add(productIndex);
+                }
+            }*/
+            foreach (Rate r in rateSet)
+            {
+                if (r.User == user)
+                {
+                    int productIndex = r.Product;
                     if (!productIndexList.Contains(productIndex))
                         productIndexList.Add(productIndex);
                 }
@@ -165,101 +181,55 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             productIndexList.Sort();
 
             //reduces productMatrix into subMatrix piu that contains the products that the user rated 
-            double[,] piu = new double[productsMatrix.GetLength(0), productIndexList.Count];
+            double[,] piu = new double[productIndexList.Count, this.factorsAmount];
 
             for (int i = 0; i < productIndexList.Count; i++)
             {
-                for (int j = 0; j < productsMatrix.GetLength(0); j++)
+                for (int j = 0; j < this.factorsAmount; j++)
                 {
-                    piu[j, i] = productsMatrix[j, productIndexList[i]];
+                    piu[i, j] = productsMatrix[productIndexList[i], j ];
                 }
             }
-            //transposes piu matrix into new matrix variable
-            double[,] transposedPiu = transposeMatrix(piu);
 
-            //multiplies two pius
-            double[,] multipliedPiuMatrixes = Times(piu, transposedPiu);
 
-            //generates diagonal 1 matrix and multiplies 1's by lambda
-            double[,] lambdaMatrix = generateLambdaMatrix(0.1, multipliedPiuMatrixes.GetLength(0), multipliedPiuMatrixes.GetLength(1));
+            double[,] multiplied = multiplyMat(piu);
+            double[,] au = addLambda(0.1, multiplied);
 
-            //sum of lambda matrix and multiPius = au
-            double[,] au = Plus(multipliedPiuMatrixes, lambdaMatrix);
-
-            //double[,] lambdaMatrix = generateLambdaMatrix
             return au;
+
         }
 
-        //transposes matrix, switches column indexs to row indexes (column 1 now becomes row 1, and row 1 becomes column 1)
-        private double[,] transposeMatrix(double[,] matrix)
+        private double[,] multiplyMat(double[,] mat)
         {
-            double[,] transposedMatrix = new double[matrix.GetLength(1), matrix.GetLength(0)];
-            for (int i = 0; i < matrix.GetLength(1); i++)
+            double[,] tempMat = new double[mat.GetLength(1), mat.GetLength(1)];
+            for (int i = 0; i < mat.GetLength(1); i++)
             {
-                for (int j = 0; j < matrix.GetLength(0); j++)
+                for (int j = 0; j < mat.GetLength(1); j++)
                 {
-                    transposedMatrix[i, j] = matrix[j, i];
-                }
-            }
-            return transposedMatrix;
-        }
-
-        //generates diagonal 1's across zeroed matrix and multiplys 1s by lamda
-        private double[,] generateLambdaMatrix(double lambda, int n, int m)
-        {
-            double[,] lambdaMatrix = new double[n, m];
-            for (int i = 0; i < n; i++)
-            {
-                for (int j = 0; j < m; j++)
-                {
-                    if (i == j)
-                        lambdaMatrix[i, j] = lambda;
-                    else
-                        lambdaMatrix[i, j] = 0.0;
-                }
-            }
-            return lambdaMatrix;
-        }
-
-        //matrix addition method
-        private double[,] Plus(double[,] a, double[,] b)
-        {
-            if (a.GetLength(0) != b.GetLength(0) || a.GetLength(1) != b.GetLength(1))
-                throw new System.ArgumentException("Matrixes must be the same size when adding");
-
-            for (int i = 0; i < a.GetLength(0); i++)
-            {
-                for (int j = 0; j < a.GetLength(1); j++)
-                {
-                    a[i, j] += b[i, j];
-                }
-            }
-            return a;
-        }
-        //matrix multiplication method
-        private double[,] Times(double[,] a, double[,] b)
-        {
-            if (a.GetLength(1) != b.GetLength(0))
-                throw new System.ArgumentException("Matrixes must be able to multiply");
-
-            double[,] multipliedMatrix = new double[a.GetLength(0), b.GetLength(1)];
-            for (int i = 0; i < a.GetLength(0); i++)
-            {
-                for (int j = 0; j < b.GetLength(1); j++)
-                {
-                    double sum = 0;
-                    for (int k = 0; k < a.GetLength(1); k++)
+                    for (int k = 0; k < mat.GetLength(0); k++)
                     {
-                        sum += a[i, k] * b[k, j];
+                        tempMat[j, i] += mat[k, i] * mat[k, j];
                     }
-                    multipliedMatrix[i, j] = sum;
                 }
-
             }
-            return multipliedMatrix;
-
+            return tempMat;
         }
 
+
+
+        private double[,] addLambda(double lambda, double[,] mat)
+        {
+            for(int i=0; i < mat.GetLength(1); i++)
+            {
+                mat[i, i] += lambda;
+            }
+            return mat;
+        }
+
+
+
+        
+        
 
         public void printMatrix(double[,] matrix)
         {
@@ -403,13 +373,34 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             double rate=0;
             for(int i=0; i < this.factorsAmount; i++)
             {
-                rate += prodMat[prodID, i] + userMat[userID, i];
+                rate += prodMat[prodID, i] * userMat[userID, i];
             }
             return rate;
         }
+        private void printRmatrixes(double[,] prodMat, double[,] userMat)
+        {
+            for (int i = 0; i < userMat.GetLength(0); i++)
+            {
+                for (int j = 0; j < prodMat.GetLength(0); j++)
+                {
+                    Console.Write(getCountedRate(j, i, prodMat, userMat)+"\t");
+                }
+                Console.WriteLine();
+
+            }
+            Console.WriteLine("####################");
+            for (int i = 0; i < userMat.GetLength(0); i++)
+            {
+                for (int j = 0; j < prodMat.GetLength(0); j++)
+                {
+                    Console.Write(getRealRate(j, i) + "\t");
+                }
+                Console.WriteLine();
+            }
+        }
         private double getRealRate(int prodID, int userID)
         {
-            foreach(Rate r in rateList)
+            foreach(Rate r in rateSet)
             {
                 if(r.User==userID && r.Product == prodID)
                 {
