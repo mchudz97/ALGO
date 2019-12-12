@@ -18,13 +18,13 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                 //textBox3.Text += ("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
                 Console.WriteLine("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
             }
-            foreach (Rate r in p.RateList)
+            foreach (Rate r in p.RateSet)
             {
                 Console.WriteLine(r);
             }
 
-            MatrixOperations mo = new MatrixOperations(p, 3);
-            mo.ALS();
+            MatrixOperations mo = new MatrixOperations(p, 10);
+            mo.ALS(0.0001);
         }
     }
 }

@@ -9,7 +9,6 @@ namespace ALS_RECOMMENDATION_ALGORITHM
     {
         private Dictionary<String, int> userDict;
         private Dictionary<String, int> productDict;
-        private List<Rate> rateList;
         private HashSet<Rate> rateSet;
         private int factorsAmount;
         Randomizer randomizer;
@@ -20,19 +19,21 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             p.parse();
             this.userDict = p.UserDict;
             this.productDict = p.ProductDict;
-            this.rateList = p.RateList;
+            
             this.rateSet = p.RateSet;
             this.factorsAmount = factorsAmount;
             this.randomizer = new Randomizer();
         }
-        public void ALS()
+        public void ALS(double regDegree)
         {
             double[,] productMatrix = randomizer.Randomize(productDict.Count,this.factorsAmount);
             double[,] userMatrix = randomizer.Randomize(userDict.Count, this.factorsAmount);
-            int n = 0;
-            while (n!=20)
-            {
+           
+            double funcOld = 0;
 
+            while (true)
+            {
+                
                 for(int i=0; i < userDict.Count; i++)
                 {
                     double[] temp = this.generateXu(productMatrix, i);
@@ -49,8 +50,17 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                         productMatrix[i, j] = temp[j];
                     }
                 }
-                Console.WriteLine(this.targetFunc(productMatrix, userMatrix));
-                n++;
+                double funcNew = this.targetFunc(productMatrix, userMatrix);
+                Console.WriteLine(funcNew);
+                 
+                if((funcOld/funcNew)<=(1+regDegree) && (funcOld/funcNew) >= (1 - regDegree))
+                {
+                    
+                    break;
+                }
+ 
+                funcOld = funcNew;
+                
             }
             printRmatrixes(productMatrix, userMatrix);
         }
@@ -383,7 +393,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             {
                 for (int j = 0; j < prodMat.GetLength(0); j++)
                 {
-                    Console.Write(getCountedRate(j, i, prodMat, userMat)+"\t");
+                    Console.Write(Math.Round(getCountedRate(j, i, prodMat, userMat),2, MidpointRounding.ToEven) + " ");
                 }
                 Console.WriteLine();
 
@@ -393,7 +403,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             {
                 for (int j = 0; j < prodMat.GetLength(0); j++)
                 {
-                    Console.Write(getRealRate(j, i) + "\t");
+                    Console.Write(getRealRate(j, i) + " ");
                 }
                 Console.WriteLine();
             }
