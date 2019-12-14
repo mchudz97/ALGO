@@ -115,8 +115,9 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                                 }
                                 tmp = Regex.Match(ln, "rating:.*votes:").Value;
                                 double rate = Double.Parse(tmp[7..^7].Trim());
+
                                 
-                                rateSet.Add(new Rate(rate, productCounterTMP, uIndex));
+                                this.addRate(new Rate(rate, productCounterTMP, uIndex));
                                 
                             }
 
@@ -131,7 +132,22 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             }
             
         }
-        
-        
+
+        public void addRate(Rate newRate){
+            bool doUpdate = false;
+            foreach(Rate oldRate in this.rateSet){
+                if(oldRate.User.Equals(newRate.User) && oldRate.Product.Equals(newRate.Product)){
+                    oldRate.Value = newRate.Value;
+                    doUpdate = true;
+                }
+            }
+            if(doUpdate.Equals(false)){
+                rateSet.Add(newRate);
+            }
+        }
+
+        public void deleteUser(){
+            
+        } 
     }
 }

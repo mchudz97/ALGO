@@ -352,7 +352,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         }
         private double targetFunc(double[,] products, double[,] users)
         {
-            return this.rateDiff(products,users)+0.1 * this.matrixNorm(products) * this.matrixNorm(users);
+            return this.rateDiff(products,users)+ 0.1 * this.matrixNorm(products) + this.matrixNorm(users);
         }
         private double rateDiff(double[,] prod, double[,] user)
         {
