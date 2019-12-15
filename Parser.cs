@@ -208,26 +208,26 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             }
         }
 
-        public Dictionary<String,int> userLimiter(int numberOfUsers){
+        public Dictionary<String,int> productLimiter(int numberOfUsers){
             int index=0;
-            Dictionary<String,int> userLimitDictionary = new Dictionary<String, int>();
-            foreach(KeyValuePair<String,int> kvp in userDict){
+            Dictionary<String,int> productLimitDictionary = new Dictionary<String, int>();
+            foreach(KeyValuePair<String,int> kvp in productDict){
                 if(index.Equals(numberOfUsers)){
                     break;
                 } else{
-                    userLimitDictionary.Add(kvp.Key,kvp.Value);
+                    productLimitDictionary.Add(kvp.Key,kvp.Value);
                     index++;
                 }
             }
-            return userLimitDictionary;
+            return productLimitDictionary;
         }
 
         public HashSet<Rate> rateLimiter(int numberOfUsers){
             HashSet<Rate> rateLimiterHashSet = new HashSet<Rate>();
-            Dictionary<String,int> userLimitDictionary = userLimiter(numberOfUsers);
-            foreach(KeyValuePair<String,int> kvp in userLimitDictionary){
+            Dictionary<String,int> productLimitDictionary = productLimiter(numberOfUsers);
+            foreach(KeyValuePair<String,int> kvp in productLimitDictionary){
                 foreach(Rate rate in rateSet){
-                    if(rate.User.Equals(kvp.Value)){
+                    if(rate.Product.Equals(kvp.Value)){
                         rateLimiterHashSet.Add(rate);
                     }
                 }
@@ -235,12 +235,12 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             return rateLimiterHashSet;
         }
 
-        public Dictionary<String,int> productLimiter(int numberOfUsers){
+        public Dictionary<String,int> userLimiter(int numberOfUsers){
             HashSet<Rate> rateLimiterHashSet = rateLimiter(numberOfUsers);
             Dictionary<String,int> productLimitDictionary = new Dictionary<String, int>();
-            foreach(KeyValuePair<String,int> kvp in productDict){
+            foreach(KeyValuePair<String,int> kvp in userDict){
                 foreach(Rate rate in rateLimiterHashSet){
-                    if(rate.Product.Equals(kvp.Value)){
+                    if(rate.User.Equals(kvp.Value)){
                         productLimitDictionary.Add(kvp.Key,kvp.Value);
                         break;
                     }
@@ -250,15 +250,17 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         }
 
         public void newDictionariesSetter(int numberOfUsers){
-            Dictionary<String,int> userLimitDictionary = userLimiter(numberOfUsers);
-            HashSet<Rate> rateLimiterHashSet = rateLimiter(numberOfUsers);
+            
             Dictionary<String,int> productLimitDictionary = productLimiter(numberOfUsers);
-            userDict.Clear();
-            RateSet.Clear();
+            HashSet<Rate> rateLimiterHashSet = rateLimiter(numberOfUsers);
+            Dictionary<String,int> userLimitDictionary = userLimiter(numberOfUsers);
+            
             productDict.Clear();
-            this.userDict = userLimitDictionary;
-            this.rateSet = rateLimiterHashSet;
+            RateSet.Clear();
+            userDict.Clear();
             this.productDict = productLimitDictionary;
+            this.rateSet = rateLimiterHashSet;
+            this.userDict = userLimitDictionary;
         }
     }
 }
