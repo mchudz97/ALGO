@@ -117,8 +117,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                                 double rate = Double.Parse(tmp[7..^7].Trim());
 
                                 
-                                this.addRate(new Rate(rate, productCounterTMP, uIndex));
-                                
+                                this.addRate(new Rate(rate, productCounterTMP, uIndex));                                
                             }
 
 
@@ -130,7 +129,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                 }
 
             }
-            
+            this.deleteUsersProducts();
         }
 
         public void addRate(Rate newRate){
@@ -146,8 +145,64 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             }
         }
 
-        public void deleteUser(){
-            
+        public Dictionary<String,int> findUsersToDelete(HashSet<Rate> rates){
+            Dictionary<String,int> usersToDelete = new Dictionary<String, int>();
+            foreach(KeyValuePair<String,int> kvp in userDict){
+                int findNext=0;
+                foreach(Rate rate in rates){
+                    if(rate.User.Equals(kvp.Value)){
+                        findNext++;
+                    }
+                }
+                if(findNext < 2){
+                    usersToDelete.Add(kvp.Key,kvp.Value);
+                }
+            }
+            return usersToDelete;
+        }
+
+        public Dictionary<String,int> findProductsToDelete(HashSet<Rate> rates){
+            Dictionary<String,int> productsToDelete = new Dictionary<String,int>();
+            foreach(KeyValuePair<String,int> kvp in productDict){
+                int findNext=0;
+                foreach(Rate rate in rates){
+                    if(rate.Product.Equals(kvp.Value)){
+                        findNext++;
+                    }
+                }
+                if(findNext<1){
+                    productsToDelete.Add(kvp.Key,kvp.Value);
+                }
+            }
+            return productsToDelete;
+        }
+
+        public HashSet<Rate> findRatesToDelete(HashSet<Rate> rates){
+            Dictionary<String,int> usersToDelete = findUsersToDelete(this.rateSet);
+            HashSet<Rate> ratesToDelete = new HashSet<Rate>();
+            foreach(KeyValuePair<String,int> user in usersToDelete){
+                foreach(Rate rate in rates){
+                    if(user.Value.Equals(rate.User)){
+                        ratesToDelete.Add(rate);
+                    }
+                }
+            }
+            return ratesToDelete;   
+        } 
+
+        public void deleteUsersProducts(){
+            Dictionary<String,int> usersToDelete = findUsersToDelete(this.rateSet);
+            HashSet<Rate> ratesToDelete = findRatesToDelete(this.rateSet);
+            foreach(KeyValuePair<String,int> kvp in usersToDelete){
+                userDict.Remove(kvp.Key);
+            }
+            foreach(Rate rate in ratesToDelete){
+                this.rateSet.Remove(rate);
+            }
+            Dictionary<String,int> productsToDelete = findProductsToDelete(this.rateSet);
+            foreach(KeyValuePair<String,int> kvp in productsToDelete){
+                productDict.Remove(kvp.Key);
+            }
         } 
     }
 }
