@@ -7,36 +7,33 @@ namespace ALS_RECOMMENDATION_ALGORITHM
     {
         static void Main(string[] args)
         {
-            Parser p = new Parser("amazon-meta.txt", 1000);
-            /*foreach (KeyValuePair<String, int> kvp in p.ProductDict)
-            {
-                //textBox3.Text += ("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
-                Console.WriteLine("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
+
+            // foreach (KeyValuePair<String, int> kvp in p.ProductDict)
+            // {
+            //     //textBox3.Text += ("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
+            //     Console.WriteLine("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
+            // }
+            // foreach (KeyValuePair<String, int> kvp in p.UserDict)
+            // {
+            //     //textBox3.Text += ("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
+            //     Console.WriteLine("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
+            // }
+            // foreach (Rate r in p.RateSet)
+            // {
+            //     Console.WriteLine(r);
+            // }
+
+
+            double lambda = 100;
+            for(int i = 50; i <= 250; i = i + 50) {
+                for(int j = 0; j < 15; j++ ) {
+                    Parser p = new Parser("amazon-meta.txt","Book", i, 5, 500);
+                    MatrixOperations mo = new MatrixOperations(p, 5);
+                    mo.test(0.0001,lambda,10);
+                    lambda = lambda / 10;
+                }
+
             }
-            foreach (KeyValuePair<String, int> kvp in p.UserDict)
-            {
-                //textBox3.Text += ("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
-                Console.WriteLine("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
-            }
-            foreach(Rate r in p.RateList)
-            {
-                Console.WriteLine(r);
-            }*/
-
-            double[,] U = Randomizer.Randomize(1000,3);
-
-            double[,] P = Randomizer.Randomize(3,1000);
-
-            MatrixOperations mo = new MatrixOperations();
-            
-
-            mo.RateList = p.RateList;
-            mo.UserDict = p.UserDict;
-            mo.ProductDict = p.ProductDict;
-
-            mo.generateAu(2, P);
-
-            
         }
     }
 }
