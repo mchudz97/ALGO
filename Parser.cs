@@ -13,6 +13,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         private StreamReader sr;
         private int recordLimiter;
         private int rateAmount;
+        private int realLimit;
         private Dictionary<String, int> userDict;
         private Dictionary<String, int> productDict;
         private int productCounter=0;
@@ -20,11 +21,12 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         
         private String category;
         private HashSet<Rate> rateSet;
-        public Parser(String path,String category, int productLimit, int rateAmount)
+        public Parser(String path,String category, int productLimit, int rateAmount,int realLimit)
         {
             this.path = path;
             sr = new StreamReader(path);
             this.recordLimiter = productLimit;
+            this.realLimit = realLimit;
             this.rateAmount = rateAmount;
             this.userDict = new Dictionary<String, int>();
             this.productDict = new Dictionary<String, int>();
@@ -130,6 +132,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
 
             }
             this.deleteUsersProducts();
+            this.newDictionariesSetter(this.realLimit);
         }
 
         public void addRate(Rate newRate){
@@ -203,6 +206,59 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             foreach(KeyValuePair<String,int> kvp in productsToDelete){
                 productDict.Remove(kvp.Key);
             }
-        } 
+        }
+
+        public Dictionary<String,int> userLimiter(int numberOfUsers){
+            int index=0;
+            Dictionary<String,int> userLimitDictionary = new Dictionary<String, int>();
+            foreach(KeyValuePair<String,int> kvp in userDict){
+                if(index.Equals(numberOfUsers)){
+                    break;
+                } else{
+                    userLimitDictionary.Add(kvp.Key,kvp.Value);
+                    index++;
+                }
+            }
+            return userLimitDictionary;
+        }
+
+        public HashSet<Rate> rateLimiter(int numberOfUsers){
+            HashSet<Rate> rateLimiterHashSet = new HashSet<Rate>();
+            Dictionary<String,int> userLimitDictionary = userLimiter(numberOfUsers);
+            foreach(KeyValuePair<String,int> kvp in userLimitDictionary){
+                foreach(Rate rate in rateSet){
+                    if(rate.User.Equals(kvp.Value)){
+                        rateLimiterHashSet.Add(rate);
+                    }
+                }
+            }
+            return rateLimiterHashSet;
+        }
+
+        public Dictionary<String,int> productLimiter(int numberOfUsers){
+            HashSet<Rate> rateLimiterHashSet = rateLimiter(numberOfUsers);
+            Dictionary<String,int> productLimitDictionary = new Dictionary<String, int>();
+            foreach(KeyValuePair<String,int> kvp in productDict){
+                foreach(Rate rate in rateLimiterHashSet){
+                    if(rate.Product.Equals(kvp.Value)){
+                        productLimitDictionary.Add(kvp.Key,kvp.Value);
+                        break;
+                    }
+                }
+            }
+            return productLimitDictionary;
+        }
+
+        public void newDictionariesSetter(int numberOfUsers){
+            Dictionary<String,int> userLimitDictionary = userLimiter(numberOfUsers);
+            HashSet<Rate> rateLimiterHashSet = rateLimiter(numberOfUsers);
+            Dictionary<String,int> productLimitDictionary = productLimiter(numberOfUsers);
+            userDict.Clear();
+            RateSet.Clear();
+            productDict.Clear();
+            this.userDict = userLimitDictionary;
+            this.rateSet = rateLimiterHashSet;
+            this.productDict = productLimitDictionary;
+        }
     }
 }
