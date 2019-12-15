@@ -26,7 +26,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
 
             double lambda = 100;
             for(int i = 50; i <= 250; i = i + 50) {
-                for(int j = 0; j < 15; j++ ) {
+                for(int j = 0; j < 10; j++ ) {
                     Parser p = new Parser("amazon-meta.txt","Book", i, 5, 500);
                     MatrixOperations mo = new MatrixOperations(p, 5);
                     mo.test(0.0001,lambda,10);
