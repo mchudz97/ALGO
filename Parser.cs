@@ -133,8 +133,9 @@ namespace ALS_RECOMMENDATION_ALGORITHM
 
             }
             this.deleteUsersProducts();
-            this.newDictionariesSetter(this.realLimit);
+            
             this.sortProducts();
+            this.newDictionariesSetter(this.realLimit);
             this.repairIndex();
         }
 
@@ -366,7 +367,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                 }
                 productsPlusRateAmount.Add(kvp.Key, amount);
             }
-            var ordered = productsPlusRateAmount.OrderBy(x => x.Value);
+            var ordered = productsPlusRateAmount.OrderByDescending(x => x.Value);
             Dictionary<String, int> sorted = new Dictionary<String, int>(0);
             foreach(KeyValuePair<String, int> kvp in ordered)
             {
