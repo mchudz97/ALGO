@@ -84,7 +84,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             Console.WriteLine("Factors: " + factorsAmount);
             Stopwatch s = new Stopwatch();
             s.Start();
-            HashSet<Rate> hiddenRates = CreateTestMatrix(percent);
+            HashSet<Rate> hiddenRates = CreateTestMatrix();
             ALS(regDegree, 0.1, iter);
 
             double sumErrors = 0;
@@ -111,8 +111,8 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                 rateSet.Add(r);
             }
 
-            
-            sumErrors = sumErrors / hiddenRates.Count;
+
+            sumErrors = sumErrors / rateSet.Count;//hiddenRates.Count;
             string[] toFile = {"Users: "+ userMatrix.GetLength(0).ToString(),
                                "Products: "+ productMatrix.GetLength(0).ToString(),
                                 "AverageError: " + sumErrors.ToString(),
@@ -146,20 +146,58 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             }
         }
 
-        public HashSet<Rate> CreateTestMatrix(double percent)
+
+        private int getUserRateAmount(int id)
+        {
+            int i = 0;
+            foreach(Rate r in rateSet)
+            {
+                if (r.User == id)
+                {
+                    i++;
+                }
+            }
+            return i;
+        }
+        private int getProductRateAmount(int id)
+        {
+            int i = 0;
+            foreach (Rate r in rateSet)
+            {
+                if (r.Product == id)
+                {
+                    i++;
+                }
+            }
+            return i;
+        }
+       
+        private bool isUserProductNotIn(int idp, int idu, HashSet<Rate> hs)
+        {
+            foreach (Rate ra in hs)
+            {
+                if (ra.User == idu || ra.Product == idp)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        public HashSet<Rate> CreateTestMatrix()
         {
             HashSet<Rate> hiddenRates = new HashSet<Rate>(0);
 
-            double total = 0;
+            
 
             foreach (Rate r in rateSet)
             {
-                if (total > 100)
+                if (getProductRateAmount(r.Product)>1 && getUserRateAmount(r.User)>1)
                 {
-                    hiddenRates.Add(r);
-                    total = total - 100;
+                    if(isUserProductNotIn(r.Product, r.User, hiddenRates))
+                        hiddenRates.Add(r);
+                    
                 }
-                total = total + percent;
+                
             }
 
             foreach (Rate r in hiddenRates)
