@@ -7,8 +7,8 @@ namespace ALS_RECOMMENDATION_ALGORITHM
     {
         static void Main(string[] args)
         {
-            Parser p = new Parser("amazon-meta.txt", "Book", 1500, 5, 10);
-            p.parse();
+         /*   Parser p = new Parser("amazon-meta.txt", "Book", 1500, 5, 10);
+            p.parse();*/
             /*foreach (KeyValuePair<String, int> kvp in p.ProductDict)
             {
                 //textBox3.Text += ("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
@@ -23,11 +23,15 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             {
                 Console.WriteLine(r);
             }*/
-            for(int i=5; i <= 30; i = i + 5)
-            {
+            for(int j = 10; j <= 100; j = j * 10) {
+                Parser p = new Parser("amazon-meta.txt", "Book", 200, 5, j);
+                p.parse();
+                for (int i=5; i <= 30; i = i + 5)
+                {
 
-             MatrixOperations mo = new MatrixOperations(p, i);
-             mo.test(0.001, 0.1, 10);
+                 MatrixOperations mo = new MatrixOperations(p, i);
+                 mo.test(0.001, 0.1, 10, j);
+                }
             }
         }
     }

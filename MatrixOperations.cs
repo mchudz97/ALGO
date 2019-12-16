@@ -33,7 +33,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             productMatrix = randomizer.Randomize(productDict.Count, this.factorsAmount);
             userMatrix = randomizer.Randomize(userDict.Count, this.factorsAmount);
         }
-        public void ALS(double regDegree, double lambda)
+        public void ALS(double regDegree, double lambda, int iter)
         {
 
             double funcOld = 0;
@@ -72,10 +72,10 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             }
             
             
-            printToFile("TestFunc.txt", funcs);
+            printToFile($"TestFunc{iter}g.csv", funcs);
             //printRmatrixes(productMatrix, userMatrix);
         }
-        public void test(double regDegree, double lambda, double percent)
+        public void test(double regDegree, double lambda, double percent, int iter)
         {
             Console.WriteLine("Running tests on parameters: ");
             Console.WriteLine("Users: " + userDict.Count);
@@ -85,7 +85,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             Stopwatch s = new Stopwatch();
             s.Start();
             HashSet<Rate> hiddenRates = CreateTestMatrix(percent);
-            ALS(regDegree, 0.1);
+            ALS(regDegree, 0.1, iter);
 
             double sumErrors = 0;
 
@@ -99,22 +99,26 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                 double realValue = 0;
                 for (int i = 0; i < this.factorsAmount; i++)
                 {
+
+                    
                     realValue += userMatrix[userID, i] * productMatrix[productID, i];
                 }
 
                 double absResult = Math.Abs(expectedValue - realValue);
 
-                //Console.WriteLine("Oczekiwana: " + expected + ", Rzeczywista: " + real + ", różnica: " + diff);
+               // Console.WriteLine("Oczekiwana: " + expectedValue + ", Rzeczywista: " + realValue + ", różnica: " + absResult);
                 sumErrors += absResult;
+                rateSet.Add(r);
             }
 
+            
             sumErrors = sumErrors / hiddenRates.Count;
             string[] toFile = {"Users: "+ userMatrix.GetLength(0).ToString(),
                                "Products: "+ productMatrix.GetLength(0).ToString(),
                                 "AverageError: " + sumErrors.ToString(),
                                 $"Time: {s.Elapsed}\n\n\n"};
-
-            printToFile("Tests.txt", toFile);
+            
+            printToFile($"Tests{iter}g.txt", toFile);
             
         }
 
