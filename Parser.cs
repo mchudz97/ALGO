@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -132,6 +133,8 @@ namespace ALS_RECOMMENDATION_ALGORITHM
 
             }
             this.deleteUsersProducts();
+            
+            this.sortProducts();
             this.newDictionariesSetter(this.realLimit);
             this.repairIndex();
         }
@@ -313,7 +316,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             }
             int newID2 = 0;
             Dictionary<String, int> repairedUsers = new Dictionary<string, int>(0);
-            foreach(KeyValuePair<String, int> kvp in userDict)
+            foreach (KeyValuePair<String, int> kvp in userDict)
             {
                 indexUserRepair(kvp.Value, newID2, repairedRates);
                 repairedUsers.Add(kvp.Key, newID2);
@@ -328,14 +331,14 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         private void indexUserRepair(int user, int newUser, HashSet<Rate> ratesToRepair)
         {
             List<Rate> tmprates = new List<Rate>();
-            foreach(Rate r in ratesToRepair)
+            foreach (Rate r in ratesToRepair)
             {
-                if(r.User== user)
+                if (r.User == user)
                 {
                     tmprates.Add(r);
                 }
             }
-            for(int i=0; i < tmprates.Count; i++)
+            for (int i = 0; i < tmprates.Count; i++)
             {
                 tmprates[i].User = newUser;
             }
@@ -343,14 +346,41 @@ namespace ALS_RECOMMENDATION_ALGORITHM
 
         private void indexProductRepair(int product, int newproduct, HashSet<Rate> ratesToRepair)
         {
-            
+
             foreach (Rate r in rateSet)
             {
-                if(r.Product == product)
+                if (r.Product == product)
                 {
                     ratesToRepair.Add(new Rate(r.Value, newproduct, r.User));
                 }
             }
+        }
+        private void sortProducts()
+        {
+            Dictionary<String, int> productsPlusRateAmount = new Dictionary<String, int>(0);
+            foreach (KeyValuePair<String, int> kvp in productDict)
+            {
+                int amount = 0;
+                foreach(Rate r in rateSet)
+                {
+                    if (r.Product == kvp.Value) amount++;
+                }
+                productsPlusRateAmount.Add(kvp.Key, amount);
+            }
+            var ordered = productsPlusRateAmount.OrderByDescending(x => x.Value);
+            Dictionary<String, int> sorted = new Dictionary<String, int>(0);
+            foreach(KeyValuePair<String, int> kvp in ordered)
+            {
+                foreach(KeyValuePair<String, int> kvp2 in productDict)
+                {
+                    if (kvp.Key == kvp2.Key)
+                    {
+                        sorted.Add(kvp2.Key, kvp2.Value);
+                        break;
+                    }
+                }
+            }
+            productDict = sorted;
         }
     }
 }

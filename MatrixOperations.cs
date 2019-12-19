@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics;
+using System.IO;
+
 namespace ALS_RECOMMENDATION_ALGORITHM
 {
     class MatrixOperations
@@ -15,34 +17,41 @@ namespace ALS_RECOMMENDATION_ALGORITHM
 
         double[,] productMatrix;
         double[,] userMatrix;
-
+        
 
 
 
         public MatrixOperations(Parser p, int factorsAmount)
         {
-            p.parse();
+            
             this.userDict = p.UserDict;
             this.productDict = p.ProductDict;
-            
+
             this.rateSet = p.RateSet;
             this.factorsAmount = factorsAmount;
             this.randomizer = new Randomizer();
-            productMatrix = randomizer.Randomize(productDict.Count,this.factorsAmount);
+            productMatrix = randomizer.Randomize(productDict.Count, this.factorsAmount);
             userMatrix = randomizer.Randomize(userDict.Count, this.factorsAmount);
         }
-        public void ALS(double regDegree, double lambda)
+        public TimeSpan ALS(double regDegree, double lambda, int iter)
         {
-           
-            double funcOld = 0;
 
+            double funcOld = 0;
+            List<double> funcs = new List<double>(0);
+            int n = 0;
+            Stopwatch s = new Stopwatch();
+            s.Start();
             while (true)
             {
-                
-                for(int i=0; i < userDict.Count; i++)
+                //Console.WriteLine(n + "\t"+ DateTime.Now);
+                /*if (n >= 100)
+                {
+                    break;
+                }*/
+                for (int i = 0; i < userDict.Count; i++)
                 {
                     double[] temp = this.generateXu(productMatrix, i, lambda);
-                    for(int j = 0; j < factorsAmount; j++)
+                    for (int j = 0; j < factorsAmount; j++)
                     {
                         userMatrix[i, j] = temp[j];
                     }
@@ -55,32 +64,38 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                         productMatrix[i, j] = temp[j];
                     }
                 }
-                double funcNew = this.targetFunc(productMatrix, userMatrix);
+                double funcNew = this.targetFunc(productMatrix, userMatrix, lambda);
                 Console.WriteLine(funcNew);
-                 
-                if((funcOld/funcNew)<=(1+regDegree) && (funcOld/funcNew) >= (1 - regDegree))
+                funcs.Add(funcNew);
+                if ((funcOld / funcNew) <= (1 + regDegree) && (funcOld / funcNew) >= (1 - regDegree))
                 {
-                    
+
                     break;
                 }
- 
-                funcOld = funcNew;
                 
+                funcOld = funcNew;
+                n++;
             }
-            //printRmatrixes(productMatrix, userMatrix);
+            s.Stop();
+            String info = "Users: \t" + userMatrix.GetLength(0).ToString() +
+                               "\tProducts: \t" + productMatrix.GetLength(0).ToString()+ "\n\n";
+            printToFile($"TestFunc{iter}d{this.factorsAmount}chart.csv", info);
+            printToFile($"TestFunc{iter}d{this.factorsAmount}chart.csv", funcs);
+            return s.Elapsed;
         }
-        public void test( double regDegree, double lambda, double percent)
+        public void test(double regDegree, double lambda, double percent, int iter)
         {
             Console.WriteLine("Running tests on parameters: ");
-            Console.WriteLine("Users: "+ userDict.Count);
+            Console.WriteLine("Users: " + userDict.Count);
             Console.WriteLine("Products: " + productDict.Count);
-            Console.WriteLine("Lambda: "+lambda);
-            Console.WriteLine("Factors: "+factorsAmount);
-            Stopwatch s = new Stopwatch();
-            s.Start();
-            HashSet<Rate> hiddenRates = CreateTestMatrix(percent);
-            ALS(regDegree, lambda);
-
+            Console.WriteLine("Lambda: " + 0.1);
+            Console.WriteLine("Factors: " + factorsAmount );
+            
+            
+            HashSet<Rate> hiddenRates = CreateTestMatrix();
+            
+            TimeSpan elapsed=ALS(regDegree, lambda, iter);
+            
             double sumErrors = 0;
 
             foreach (Rate r in hiddenRates)
@@ -93,47 +108,117 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                 double realValue = 0;
                 for (int i = 0; i < this.factorsAmount; i++)
                 {
+
+                    
                     realValue += userMatrix[userID, i] * productMatrix[productID, i];
-                }  
-                
+                }
+
                 double absResult = Math.Abs(expectedValue - realValue);
 
-                //Console.WriteLine("Oczekiwana: " + expected + ", Rzeczywista: " + real + ", różnica: " + diff);
+                //Console.WriteLine("Oczekiwana: " + expectedValue + ", Rzeczywista: " + realValue + ", różnica: " + absResult);
                 sumErrors += absResult;
+                rateSet.Add(r);
             }
 
-            sumErrors = sumErrors / hiddenRates.Count;
-            string[] toFile = {"Users: "+ userMatrix.GetLength(0).ToString(),
-                               "Products: "+ productMatrix.GetLength(0).ToString(),
-                                "AverageError: " + sumErrors.ToString(),
-                                $"Time: {s.Elapsed}\n\n\n"};
 
-            printToFile("Tests.txt", toFile);
-
+            sumErrors = sumErrors / rateSet.Count;//hiddenRates.Count;
+            string toFile = "Users: \t"+ userMatrix.GetLength(0).ToString() +
+                               "\tProducts: \t"+ productMatrix.GetLength(0).ToString() +
+                                "\tAverageError: \t" + sumErrors.ToString()+
+                                $"\tTime:\t {elapsed}";
+            
+            printToFile($"Tests{iter}.csv", toFile);
+            
         }
 
-        public static void printToFile(string filename, string[] toFile ) {
-            using (System.IO.StreamWriter file = 
-                new System.IO.StreamWriter(filename,true)) {
-                    foreach(string line in toFile)
-                        file.WriteLine(line);
+        public static void printToFile(string filename, string[] toFile)
+        {
+            using (System.IO.StreamWriter file =
+                new System.IO.StreamWriter(filename, true))
+            {
+                foreach (string line in toFile)
+                    file.WriteLine(line);
+
+                file.WriteLine("################");
+            }
+           
+        }
+        public static void printToFile(string filename, string toFile)
+        {
+            using (System.IO.StreamWriter file =
+                new System.IO.StreamWriter(filename, true))
+            {
+               
+                    file.WriteLine(toFile);
+
+                
+            }
+
+        }
+        public static void printToFile(string filename, List<double> toFile)
+        {
+            using (System.IO.StreamWriter file =
+                new System.IO.StreamWriter(filename, true))
+            {
+                foreach (double line in toFile)
+                    file.WriteLine(line);
+
+                file.WriteLine("################");
+            }
+        }
+
+
+        private int getUserRateAmount(int id)
+        {
+            int i = 0;
+            foreach(Rate r in rateSet)
+            {
+                if (r.User == id)
+                {
+                    i++;
                 }
+            }
+            return i;
         }
-
-        public HashSet<Rate> CreateTestMatrix(double percent)
+        private int getProductRateAmount(int id)
+        {
+            int i = 0;
+            foreach (Rate r in rateSet)
+            {
+                if (r.Product == id)
+                {
+                    i++;
+                }
+            }
+            return i;
+        }
+       
+        private bool isUserProductNotIn(int idp, int idu, HashSet<Rate> hs)
+        {
+            foreach (Rate ra in hs)
+            {
+                if (ra.User == idu || ra.Product == idp)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        public HashSet<Rate> CreateTestMatrix()
         {
             HashSet<Rate> hiddenRates = new HashSet<Rate>(0);
 
-            double total = 0;
+            
 
             foreach (Rate r in rateSet)
             {
-                if (total > 100)
+                if (getProductRateAmount(r.Product)>1 && getUserRateAmount(r.User)>1)
                 {
-                    hiddenRates.Add(r);
-                    total = total - 100;
+                    if(isUserProductNotIn(r.Product, r.User, hiddenRates))
+                        hiddenRates.Add(r);
+                    
                 }
-                total = total + percent;
+                
             }
 
             foreach (Rate r in hiddenRates)
@@ -143,46 +228,46 @@ namespace ALS_RECOMMENDATION_ALGORITHM
 
             return hiddenRates;
         }
-        private double[] generateXu(double [,] products, int indexUser, double lambda)
+        private double[] generateXu(double[,] products, int indexUser, double lambda)
         {
             return this.PG(this.generateAu(indexUser, products, lambda), this.generateVu(products, indexUser));
         }
-        private double[] generateXp(double [,] users, int indexProduct, double lambda)
+        private double[] generateXp(double[,] users, int indexProduct, double lambda)
         {
             return this.PG(this.generateBp(indexProduct, users, lambda), this.generateWp(users, indexProduct));
         }
 
-        private double[] generateVu(double[,] products, int indexUser )
+        private double[] generateVu(double[,] products, int indexUser)
         {
-         
-            double[] vu= new double[products.GetLength(1)];
-            foreach(Rate r in rateSet)
+
+            double[] vu = new double[products.GetLength(1)];
+            foreach (Rate r in rateSet)
             {
                 if (r.User == indexUser)
                 {
                     for (int i = 0; i < products.GetLength(1); i++)
                     {
-                        vu[i] = vu[i] + products[r.Product,i] * r.Value;
+                        vu[i] = vu[i] + products[r.Product, i] * r.Value;
 
                     }
-                    
+
                 }
             }
             return vu;
         }
         private double[] generateWp(double[,] users, int indexProduct)
         {
-            
+
             double[] wp = new double[users.GetLength(1)];
-            foreach(Rate r in rateSet)
+            foreach (Rate r in rateSet)
             {
                 if (r.Product == indexProduct)
                 {
-                    for(int i = 0; i < users.GetLength(1); i++)
+                    for (int i = 0; i < users.GetLength(1); i++)
                     {
-                        wp[i] = wp[i] + users[r.User,i] * r.Value;
+                        wp[i] = wp[i] + users[r.User, i] * r.Value;
                     }
-                    
+
                 }
             }
             return wp;
@@ -197,19 +282,8 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             //list that contains product index in productsMatrix
             List<int> userIndexList = new List<int>();
 
-            //for every rate check if user id(int) == rate user id(int)
-            // if YES add productIndex to list ONLY if NOT added already
-           /* for (int i = 0; i < rateList.Count; i++)
-            {
-                Rate rate = rateList[i];
-                if (rate.Product == product)
-                {
-                    int userIndex = rate.User;
-                    if (!userIndexList.Contains(userIndex))
-                        userIndexList.Add(userIndex);
-                }
-            }*/
-            foreach(Rate r in rateSet)
+            
+            foreach (Rate r in rateSet)
             {
                 if (r.Product == product)
                 {
@@ -233,7 +307,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
                 }
             }
 
-            
+
             double[,] multiplied = multiplyMat(bip);
             double[,] bp = addLambda(lambda, multiplied);
             return bp;
@@ -244,18 +318,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             //list that contains product index in productsMatrix
             List<int> productIndexList = new List<int>();
 
-            //for every rate check if user id(int) == rate user id(int)
-            // if YES add productIndex to list ONLY if NOT added already
-            /*for (int i = 0; i < rateList.Count; i++)
-            {
-                Rate rate = rateList[i];
-                if (rate.User == user)
-                {
-                    int productIndex = rate.Product;
-                    if (!productIndexList.Contains(productIndex))
-                        productIndexList.Add(productIndex);
-                }
-            }*/
+
             foreach (Rate r in rateSet)
             {
                 if (r.User == user)
@@ -276,7 +339,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             {
                 for (int j = 0; j < this.factorsAmount; j++)
                 {
-                    piu[i, j] = productsMatrix[productIndexList[i], j ];
+                    piu[i, j] = productsMatrix[productIndexList[i], j];
                 }
             }
 
@@ -308,7 +371,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
 
         private double[,] addLambda(double lambda, double[,] mat)
         {
-            for(int i=0; i < mat.GetLength(1); i++)
+            for (int i = 0; i < mat.GetLength(1); i++)
             {
                 mat[i, i] += lambda;
             }
@@ -317,8 +380,8 @@ namespace ALS_RECOMMENDATION_ALGORITHM
 
 
 
-        
-        
+
+
 
         public void printMatrix(double[,] matrix)
         {
@@ -355,9 +418,9 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             {
                 for (int j = tab2.Length - 1; j > i; j--)
                 {
-                    tab2[i] -= (dynamic)tab1[j,i] * x[tab2.Length - 1 - j];
+                    tab2[i] -= (dynamic)tab1[j, i] * x[tab2.Length - 1 - j];
                 }
-                x[tab2.Length - 1 - i] = (dynamic)tab2[i] / tab1[i,i];
+                x[tab2.Length - 1 - i] = (dynamic)tab2[i] / tab1[i, i];
             }
             return x;
         }
@@ -376,9 +439,9 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             if (i == j) return;
             for (int k = i; k < tab1.GetLength(1); k++)
             {
-                double temp = tab1[k,i];
-                tab1[k,i] = tab1[k,j];
-                tab1[k,j] = temp;
+                double temp = tab1[k, i];
+                tab1[k, i] = tab1[k, j];
+                tab1[k, j] = temp;
             }
             double temp2 = tab2[i];
             tab2[i] = tab2[j];
@@ -389,13 +452,13 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         private void ResetColumn(int i, double[,] t1, double[] t2)
         {
 
-            double resetVal = t1[i,i];
+            double resetVal = t1[i, i];
             for (int j = i + 1; j < t2.Length; j++) //j jest nastepna wartoscia w kolumnnie pod przekatna
             {
-                double check = t1[i,j] / resetVal; // wyznaczamy iloczyn zerujacy
+                double check = t1[i, j] / resetVal; // wyznaczamy iloczyn zerujacy
                 for (int k = i; k < t2.Length; k++)// jedziemy po wierszu
                 {
-                    t1[k,j] = t1[k,j] - t1[k,i] * check;
+                    t1[k, j] = t1[k, j] - t1[k, i] * check;
 
                 }
 
@@ -408,12 +471,12 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         private Point GetBiggestPG(double[,] tab, int p)
         {
             Point point = new Point(p, p);
-            double val = tab[p,p];
+            double val = tab[p, p];
             for (int i = p; i < tab.GetLength(1); i++)
             {
-                if (Math.Abs(tab[p,i]) > Math.Abs(val))
+                if (Math.Abs(tab[p, i]) > Math.Abs(val))
                 {
-                    val = tab[p,i];
+                    val = tab[p, i];
                     point.Y = i;
                 }
             }
@@ -429,25 +492,34 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             }
             return temp;
         }
-        private double targetFunc(double[,] products, double[,] users)
+        private double targetFunc(double[,] products, double[,] users, double lambda)
         {
-            return this.rateDiff(products,users)+ 0.1 * this.matrixNorm(products) + this.matrixNorm(users);
+            return this.rateDiff(products, users) + lambda * (this.matrixNorm(products) + this.matrixNorm(users));
         }
         private double rateDiff(double[,] prod, double[,] user)
         {
             double sum = 0;
-            for (int i = 0; i < prod.GetLength(0); i++)
+            /*for (int i = 0; i < prod.GetLength(0); i++)
             {
                 for (int j = 0; j < user.GetLength(0); j++)
                 {
-                    sum+=(this.getRealRate(i, j) - getCountedRate(i, j, prod, user))* (this.getRealRate(i, j) - getCountedRate(i, j, prod, user));
+                    sum += (this.getRealRate(i, j) - getCountedRate(i, j, prod, user)) * (this.getRealRate(i, j) - getCountedRate(i, j, prod, user));
                 }
+            }*/
+            foreach(Rate r in rateSet)
+            {
+                double countedRate = 0;
+                for(int i=0;i<this.factorsAmount; i++)
+                {
+                    countedRate += prod[r.Product, i] * user[r.User, i];
+                }
+                sum += (r.Value - countedRate) * (r.Value - countedRate);
             }
             return sum;
         }
         private double matrixNorm(double[,] tab)
         {
-            double norm=0;
+            double norm = 0;
             for (int j = 0; j < tab.GetLength(0); j++)
             {
                 for (int i = 0; i < tab.GetLength(1); i++)
@@ -459,8 +531,8 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         }
         private double getCountedRate(int prodID, int userID, double[,] prodMat, double[,] userMat)
         {
-            double rate=0;
-            for(int i=0; i < this.factorsAmount; i++)
+            double rate = 0;
+            for (int i = 0; i < this.factorsAmount; i++)
             {
                 rate += prodMat[prodID, i] * userMat[userID, i];
             }
@@ -472,7 +544,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             {
                 for (int j = 0; j < prodMat.GetLength(0); j++)
                 {
-                    Console.Write(Math.Round(getCountedRate(j, i, prodMat, userMat),2, MidpointRounding.ToEven) + " ");
+                    Console.Write(Math.Round(getCountedRate(j, i, prodMat, userMat), 2, MidpointRounding.ToEven) + " ");
                 }
                 Console.WriteLine();
 
@@ -489,14 +561,15 @@ namespace ALS_RECOMMENDATION_ALGORITHM
         }
         private double getRealRate(int prodID, int userID)
         {
-            foreach(Rate r in rateSet)
+            foreach (Rate r in rateSet)
             {
-                if(r.User==userID && r.Product == prodID)
+                if (r.User == userID && r.Product == prodID)
                 {
                     return r.Value;
                 }
             }
             return 0;
         }
+       
     }
 }

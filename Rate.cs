@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace ALS_RECOMMENDATION_ALGORITHM
+﻿namespace ALS_RECOMMENDATION_ALGORITHM
 {
-    class Rate
+    internal class Rate
     {
         private double value;
         private int product;
@@ -15,8 +11,6 @@ namespace ALS_RECOMMENDATION_ALGORITHM
             this.value = value;
             this.product = product;
             this.user = user;
-
-
         }
 
         public double Value { get => value; set => this.value = value; }
@@ -25,7 +19,7 @@ namespace ALS_RECOMMENDATION_ALGORITHM
 
         public override string ToString()
         {
-            return "Rate: " + this.value + " Product: " + this.product+ " User: "+this.user;
+            return "Rate: " + this.value + " Product: " + this.product + " User: " + this.user;
         }
     }
 }
